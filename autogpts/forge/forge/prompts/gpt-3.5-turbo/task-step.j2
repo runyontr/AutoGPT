@@ -5,9 +5,9 @@ Your task is:
 
 {{ task }}
 
-Provide the next step that should be taken in the provided format.  Be sure to validate you have completed the task using the abilities provided.
+Provide the next step that should be taken in the provided format.  
 
-Your decisions must always be made independently without seeking user assistance. Play to your strengths as an LLM and
+Play to your strengths as an LLM and
 pursue simple strategies with no legal complications.  When the task is complete based on the Steps already taken, return the finish ability.
 
 {% if constraints %}
@@ -43,6 +43,8 @@ You have access to the following abilities you can call:
 
 {% if previous_actions %}
 ## Steps already taken
+These are the previous steps that have been taken in order with the first action at the top and the most recent
+action at the bottom of the list:
 {% for action in previous_actions %}
 - ability: {{ action.name }}
   args: {{ action.args }}

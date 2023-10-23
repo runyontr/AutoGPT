@@ -126,7 +126,10 @@ class ForgeAgent(Agent):
         """
         # Firstly we get the task this step is for so we can access the task input
         task = await self.db.get_task(task_id)
-        step_request.input = task.input
+
+        LOG.debug(f"Step Request: { step_request }")
+        if step_request.input is None:
+            step_request.input = task.input
         LOG.debug(f"Running Step for Task { task.task_id }")
 
         messages = None
@@ -147,6 +150,14 @@ class ForgeAgent(Agent):
 
         prompt_engine = PromptEngine("gpt-3.5-turbo")
 
+        # set best practices:
+        best_practices = [
+                    "File operations should all be done in the local directory when possible.  Don't base file paths off of the root directory.",
+                    "When possible, use the abilities to validate the task was completed successfully",
+                    "If you're not making progress on the task like you expect, use your abilities to debug the problem",
+                    "If nothing is working, return the finish ability and provide an explination of what your assessment is of why the task cannot be completed."
+                ]
+
         if not messages:
             # Initialize the PromptEngine with the "gpt-3.5-turbo" model
 
@@ -159,11 +170,16 @@ class ForgeAgent(Agent):
             ]
             # Define the task parameters
             task_kwargs = {
-                "task": task.input,
+                "task": step_request.input,
+                # "abilities": self.abilities,
                 "abilities": self.abilities.list_abilities_for_prompt(),
                 "expert": "agent",
+                "best_practices": best_practices,
             }
             if actions:
+                # remove any actions that have a "finish" name so that we can do multiple
+                # commands within the same workspace
+                actions = [a for a in actions if a['name'] != 'finish']
                 task_kwargs['previous_actions'] = actions
 
             # Load the task prompt with the defined task parameters
@@ -179,8 +195,9 @@ class ForgeAgent(Agent):
         else:
             # Define the task parameters
             task_kwargs = {
-                "task": task.input,
+                "task": step_request.input,
                 "abilities": self.abilities.list_abilities_for_prompt(),
+                "best_practices": best_practices,
             }
 
             if actions:
@@ -190,7 +207,7 @@ class ForgeAgent(Agent):
             if debug:
                 LOG.debug(f"TASK PROMPT:\n\n{task_prompt}")
             messages.append({"role": "user", "content": task_prompt})
-            msg = await self.db.add_chat_message(task_id, "user", task.input)
+            msg = await self.db.add_chat_message(task_id, "user", step_request.input)
 
         # Define the parameters for the chat completion request
         # while True:
@@ -201,19 +218,19 @@ class ForgeAgent(Agent):
             }
 
             # Make the chat completion request and parse the response
-            if debug:
-                LOG.info(pprint.pformat("Prompt being sent to gpt-3.5"))
-                LOG.info(pprint.pformat(chat_completion_kwargs))
+            # if debug:
+                # LOG.info(pprint.pformat("Prompt being sent to gpt-3.5"))
+                # LOG.info(pprint.pformat(chat_completion_kwargs))
             chat_response = await chat_completion_request(**chat_completion_kwargs)
-            if debug:
-                LOG.info(pprint.pformat("response from gpt-3.5"))
-                LOG.info(pprint.pformat(chat_response))
+            # if debug:
+                # LOG.info(pprint.pformat("response from gpt-3.5"))
+                # LOG.info(pprint.pformat(chat_response))
             answer = json.loads(chat_response["choices"][0]["message"]["content"])
 
 
             # Log the answer for debugging purposes
             if debug:
-                LOG.info(pprint.pformat(answer))
+                LOG.info(f"LLM Response:\n\n{answer}")
 
         except json.JSONDecodeError as e:
             # Handle JSON decoding errors
@@ -234,7 +251,7 @@ class ForgeAgent(Agent):
 
             # Log the message
             if debug:
-                LOG.info(f"\t✅ Final Step completed: {step.step_id} input: {task.input[:19]}")
+                LOG.info(f"\t✅ Final Step completed: {step.step_id} input: {step_request.input[:19]}")
             step.output = answer["thoughts"]["speak"]
             # msg = await self.db.add_chat_message(task_id, "assistant", answer["thoughts"]["speak"])
             # self.db.update_step(task_id=tas)
@@ -253,7 +270,7 @@ class ForgeAgent(Agent):
                     task_id=task_id, input=step_request,                    
                 )
                 step.output = answer["thoughts"]["speak"]
-                step.input = task.input
+                step.input = step_request.input
                 step.name = ability['name']
                 
                 # Run the ability and get the output
@@ -274,7 +291,7 @@ class ForgeAgent(Agent):
                 if debug:
                     LOG.debug(f"Output of task: { output } ")
                 step.name = ability["name"]
-                step.input = task.input
+                step.input = step_request.input
                 step.output = f"{output}"
 
                 # Log the message
@@ -300,7 +317,7 @@ class ForgeAgent(Agent):
                     task_id=task_id, input=step_request,
                 )
         step.output = "Asked for bad action"
-        step.input = task.input
+        step.input = step_request.input
         step.name = "error"
         return step
        

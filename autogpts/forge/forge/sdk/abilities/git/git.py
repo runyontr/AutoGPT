@@ -9,15 +9,19 @@ from ...agent import Agent
 
 @ability(
     name="clone_repo",
-    description="Clones a GitHub repository.",
+    description="Clones a GitHub repository into the dest_path folder which it expects not to exist. This will fail if that folder is already present",
     parameters=[
         {"name": "repo_url", "description": "URL of the GitHub repository", "type": "string", "required": True},
-        {"name": "dest_path", "description": "Local destination path", "type": "string", "required": True},
+        {"name": "dest_path", "description": "Local destination path.  If empty it defaults to a local folder matching the git repository name", "type": "string", "required": False},
     ],
     output_type="string",
 )
 async def clone_repo(agent: Agent, task_id: str, repo_url: str, dest_path: str) -> str:
     
+    if dest_path is None:
+        # set dest path to the last part of the repo url
+        dest_path = repo_url.split("/")[-1]
+
     try:
         # Retrieve the GitHub token from an environment variable
         token = os.getenv("GITHUB_TOKEN")
@@ -28,13 +32,13 @@ async def clone_repo(agent: Agent, task_id: str, repo_url: str, dest_path: str) 
         repo_url_with_token = repo_url.replace("https://", f"https://{token}@")
 
         # Clone the repository
-
+        # agent.workspace.list(task_id=task_id, path=".")
         # set the path to download the repo to to be the dest_path inside of os.getenv("AGENT_WORKSPACE")
-        dest = Path(os.getenv("AGENT_WORKSPACE")) / dest_path
+        dest = agent.workspace.base_path / task_id / dest_path
 
         Repo.clone_from(repo_url_with_token, dest)
 
-        return f"Successfully cloned repository to {dest_path}."
+        return f"Successfully cloned repository to {dest}."
     except git.GitCommandError as e:
         return f"Error cloning repository: {str(e)}"
 
@@ -52,13 +56,23 @@ async def clone_repo(agent: Agent, task_id: str, repo_url: str, dest_path: str) 
 )
 async def create_branch(agent, task_id: str, repo_path: str,  branch_name: str, base_branch: str = 'main') -> str:
     # Load the repository
-    repo = Repo(repo_path)
-
-    # Create the new branch
-    repo.git.branch(branch_name, base_branch)
-
-    return f"Successfully created branch {branch_name} from {base_branch}."
-
+    try:
+        print(f"in create_branch")
+        repo_path = agent.workspace.base_path / task_id / repo_path
+        print(f"repo path: {repo_path}")
+        repo = Repo(repo_path)
+        print(f"Created repo: {repo}")
+        print(f"Current branch {repo.active_branch.name} branch")
+        # might also want to check if the branch already exists
+        repo.git.checkout("HEAD", b=branch_name)
+        #  new_branch = repo.create_head(branch_name, "HEAD")  # create a new branch ...
+        print(f"Created branch: {branch_name}")
+        print(f"Current branch {repo.active_branch.name} branch")
+        return f"Successfully created branch {branch_name} from {base_branch}"
+    except git.GitCommandError as e:
+        return f"Error creating branch: {str(e)}"
+    except Exception as e:
+        return f"Error creating branch: {str(e)}"
 
 @ability(
     name="commit_changes",

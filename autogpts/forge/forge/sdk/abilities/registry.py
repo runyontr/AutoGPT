@@ -63,11 +63,15 @@ class Ability(pydantic.BaseModel):
         Returns:
             str: A string representation of the class instance.
         """
-        func_summary = f"{self.name}("
+        func_summary = f"\"\"\"\n{self.name}:  {self.description}\n  \n  Parameters:\n  "
+
+        for param in self.parameters:
+            func_summary += f"{param.name}({param.type}): {param.description}\n  "
+        func_summary += f"\"\"\"\n  def {self.name}("
         for param in self.parameters:
             func_summary += f"{param.name}: {param.type}, "
         func_summary = func_summary[:-2] + ")"
-        func_summary += f" -> {self.output_type}. Usage: {self.description},"
+        func_summary += f" -> {self.output_type}"
         return func_summary
 
 

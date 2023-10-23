@@ -1,0 +1,23 @@
+You are a technical write that's been tasked with providing improvements to 
+documentation within software projects based on issue below. Only change the file
+if it will help address the issue.  
+
+## Issue
+
+Here is the core issue that needs to be addressed:
+
+{{ issue_text }}
+
+{% if comments %}
+Here are additional comments on the issue:
+{% for comment in comments %}
+- comment: {{ comment.text }}
+  author: {{ comment.author }}
+{% endfor %}
+{% endif %}
+
+## Document: 
+
+here is the raw document:
+
+{{ file }}

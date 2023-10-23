@@ -75,9 +75,14 @@ class LocalWorkspace(Workspace):
         path = self.base_path / task_id / path
         return self._resolve_path(task_id, path).exists()
 
+    
     def list(self, task_id: str, path: str) -> typing.List[str]:
-        path = self.base_path / task_id / path
+        print(f"Calling LocalWorkspace.list with args task_id={task_id} and path={path}")
         base = self._resolve_path(task_id, path)
+        print(f"Full path is {base}")
         if not base.exists() or not base.is_dir():
+            print("Error: Base path does not exist or is not a directory")
             return []
+        # return a list of files in the path provided, relative to the base path:
         return [str(p.relative_to(self.base_path / task_id)) for p in base.iterdir()]
+        # return [str(p.relative_to(self.base_path / task_id)) for p in base.iterdir()]
