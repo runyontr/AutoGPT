@@ -165,6 +165,7 @@ class Ground(BaseModel):
     should_contain: Optional[List[str]] = None
     should_not_contain: Optional[List[str]] = None
     files: List[str]
+    case_sensitive: Optional[bool] = True
     eval: Eval
 
 
@@ -173,6 +174,9 @@ class Category(str, Enum):
     GENERALIST = "general"
     CODING = "coding"
     SCRAPE_SYNTHESIZE = "scrape_synthesize"
+    GAIA_1 = "GAIA_1"
+    GAIA_2 = "GAIA_2"
+    GAIA_3 = "GAIA_3"
 
 
 class ChallengeData(BaseModel):

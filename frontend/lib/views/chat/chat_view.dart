@@ -64,7 +64,7 @@ class _ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
     // TODO: Do we want to have a reference to task view model in this class?
-    final taskViewModel = Provider.of<TaskViewModel>(context, listen: false);
+    final taskViewModel = Provider.of<TaskViewModel>(context, listen: true);
     return Scaffold(
       body: Column(
         children: [
@@ -105,13 +105,15 @@ class _ChatViewState extends State<ChatView> {
           LoadingIndicator(
               isLoading: Provider.of<TaskQueueViewModel>(context, listen: true)
                       .isBenchmarkRunning ||
-                  widget.viewModel.isWaitingForAgentResponse),
+                  widget.viewModel.isWaitingForAgentResponse ||
+                  taskViewModel.isWaitingForAgentResponse),
           const SizedBox(height: 10),
           // Input area
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ChatInputField(
               onSendPressed: (message) async {
+                widget.viewModel.addTemporaryMessage(message);
                 try {
                   if (widget.viewModel.currentTaskId != null) {
                     widget.viewModel.sendChatMessage(
@@ -135,6 +137,20 @@ class _ChatViewState extends State<ChatView> {
                     Fluttertoast.showToast(
                         msg:
                             "404 error: Please ensure the correct baseURL for your agent in \nthe settings and that your agent adheres to the agent protocol.",
+                        toastLength: Toast.LENGTH_LONG,
+                        gravity: ToastGravity.TOP,
+                        timeInSecForIosWeb: 5,
+                        backgroundColor: Colors.red,
+                        webPosition: "center",
+                        webBgColor:
+                            "linear-gradient(to right, #dc1c13, #dc1c13)",
+                        textColor: Colors.white,
+                        fontSize: 16.0);
+                  } else if (response is http.Response &&
+                      response.statusCode >= 500 &&
+                      response.statusCode < 600) {
+                    Fluttertoast.showToast(
+                        msg: "500 error: Something went wrong",
                         toastLength: Toast.LENGTH_LONG,
                         gravity: ToastGravity.TOP,
                         timeInSecForIosWeb: 5,

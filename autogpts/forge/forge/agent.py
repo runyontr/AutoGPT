@@ -6,13 +6,10 @@ from forge.sdk import (
     StepRequestBody,
     Task,
     TaskRequestBody,
-    Workspace,    
-    PromptEngine,	
-    chat_completion_request,	
-    ChromaMemStore	
+    Workspace,
 )
-import json	
-import pprint
+from forge.actions import ActionRegister
+
 
 LOG = ForgeLogger(__name__)
 
@@ -79,7 +76,11 @@ class ForgeAgent(Agent):
         Feel free to create subclasses of the database and workspace to implement your own storage
         """
         super().__init__(database, workspace)
+<<<<<<< HEAD
         self.memstore = ChromaMemStore("agbenchmark_config/workspace/memory")
+=======
+        self.abilities = ActionRegister(self)
+>>>>>>> upstream/master
 
     async def create_task(self, task_request: TaskRequestBody) -> Task:
         """
@@ -314,10 +315,35 @@ class ForgeAgent(Agent):
                 return step
         LOG.error(f"asking for an action that didn't exist {answer.get('ability', {}).get('name', '')}.  Lets return and try this again")
         step = await self.db.create_step(
+<<<<<<< HEAD
                     task_id=task_id, input=step_request,
                 )
         step.output = "Asked for bad action"
         step.input = step_request.input
         step.name = "error"
+=======
+            task_id=task_id, input=step_request, is_last=True
+        )
+
+        self.workspace.write(task_id=task_id, path="output.txt", data=b"Washington D.C")
+
+        await self.db.create_artifact(
+            task_id=task_id,
+            step_id=step.step_id,
+            file_name="output.txt",
+            relative_path="",
+            agent_created=True,
+        )
+
+        step.output = "Washington D.C"
+
+        LOG.info(
+            f"\t✅ Final Step completed: {step.step_id}. \n"
+            + f"Output should be placeholder text Washington D.C. You'll need to \n"
+            + f"modify execute_step to include LLM behavior. Follow the tutorial "
+            + f"if confused. "
+        )
+
+>>>>>>> upstream/master
         return step
        
