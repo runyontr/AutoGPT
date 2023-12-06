@@ -148,7 +148,7 @@ class ForgeAgent(Agent):
         except Exception as e:
             LOG.error(f"Unable to get actions history: {e}")
 
-        prompt_engine = PromptEngine("gpt-3.5-turbo")
+        prompt_engine = PromptEngine("gpt-3.5-turbo-16k")
 
         # set best practices:
         best_practices = [
@@ -214,7 +214,7 @@ class ForgeAgent(Agent):
         try:
             chat_completion_kwargs = {
                 "messages": messages,
-                "model": "gpt-3.5-turbo",
+                "model": "gpt-3.5-turbo-16k",
             }
 
             # Make the chat completion request and parse the response
