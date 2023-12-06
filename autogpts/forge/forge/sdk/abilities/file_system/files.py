@@ -106,7 +106,7 @@ async def read_file(agent, task_id: str, file_path: str) -> bytes:
 async def modify_file(agent, task_id: str, file_path: str, changes_requested: str) -> str:
     # Make specified changes to the given file in the local repo
     # we might want this to be a gpt-4 call to improve performance.
-    prompt_engine = PromptEngine("gpt-3.5-turbo")
+    prompt_engine = PromptEngine("gpt-3.5-turbo-16k")
 
     contents = await read_file(agent,task_id=task_id ,file_path=file_path)
     if contents is None:

@@ -191,7 +191,7 @@ class AbilityRegister:
 if __name__ == "__main__":
     import sys
 
-    sys.path.append("/Users/swifty/dev/forge/forge")
+    sys.path.append("/Users/tom/Workspaces/aisummit/agent/AutoGPT/forge/forge")
     register = AbilityRegister(agent=None)
     print(register.abilities_description())
     print(register.run_ability("abc", "list_files", "/Users/swifty/dev/forge/forge"))

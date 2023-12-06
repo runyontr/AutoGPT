@@ -5,7 +5,35 @@ import git
 from git import Repo
 from pathlib import Path
 
+from github import Github
+
 from ...agent import Agent
+
+
+# @ability(
+#     name="create_pull_request",
+#     description="Creates a pull request on GitHub to merge the head branch into the base branch.",
+#     parameters=[
+#         {"name": "title", "description": "Title of the pull request", "type": "string", "required": True},
+#         {"name": "body", "description": "Description/body of the pull request", "type": "string", "required": True},
+#         {"name": "repo_name", "description": "Name of the repository in owner/repo format. The repo at https://github.com/runyontr/docs would be provided as 'runyontr/docs'", "type": "string", "required": True},
+#         {"name": "base_branch", "description": "Branch the changes will be merged into", "type": "string", "required": True},
+#         {"name": "head_branch", "description": "Branch where your changes are", "type": "string", "required": True},
+#     ],
+#     output_type="string",
+# )
+# async def create_pull_request(agent, task_id: str, repo_name: str, title: str, body: str, base_branch: str, head_branch: str) -> str:
+#     # Logic for creating a pull request goes here
+#     try:
+#         g = Github(os.environ["GITHUB_TOKEN"])
+#         repo = g.get_repo(repo_name)
+#         pr = repo.create_pull(title=title, body=body, head=head_branch, base=base_branch)
+#         return pr.html_url
+#     except Exception as e:
+#         print(f"Error creating pull request: {e}")
+#         return str(f"{e}")
+#     return "Successfully created pull request."
+
 
 @ability(
     name="clone_repo",
@@ -86,6 +114,8 @@ async def create_branch(agent, task_id: str, repo_path: str,  branch_name: str, 
 async def commit_changes(agent, task_id: str, commit_message: str, repo_path: str) -> str:
     try:
         # Load the repository
+        repo_path = agent.workspace.base_path / task_id / repo_path
+        
         repo = Repo(repo_path)
         
         # Check for changes
@@ -109,44 +139,23 @@ async def commit_changes(agent, task_id: str, commit_message: str, repo_path: st
     parameters=[
         {"name": "branch_name", "description": "Name of the branch to push", "type": "string", "required": True},
         {"name": "remote_name", "description": "Name of the remote (default is 'origin')", "type": "string", "required": False, "default": "origin"},
+        {"name": "repo_path", "description": "Path to the local repository", "type": "string", "required": True}
     ],
     output_type="string",
 )
-async def push_branch(agent, task_id: str, branch_name: str, remote_name: str = 'origin') -> str:
+async def push_branch(agent, task_id: str, repo_path: str, branch_name: str, remote_name: str = 'origin') -> str:
     # Logic for pushing branch goes here
+    try:
+        repo_path = agent.workspace.base_path / task_id / repo_path
+        
+        repo = git.Repo(repo_path)
+        remote = repo.remote(name=remote_name)
+        remote.push(refspec=branch_name)
+        print(f"Successfully pushed branch '{branch_name}' to remote '{remote_name}'!")
+    except git.exc.GitCommandError as e:
+        print(f"Error pushing branch to remote: {e}")
     return "Successfully pushed branch."
 
-
-@ability(
-    name="create_pull_request",
-    description="Creates a pull request on GitHub.",
-    parameters=[
-        {"name": "title", "description": "Title of the pull request", "type": "string", "required": True},
-        {"name": "body", "description": "Description/body of the pull request", "type": "string", "required": True},
-        {"name": "base_branch", "description": "Branch the changes will be merged into", "type": "string", "required": True},
-        {"name": "head_branch", "description": "Branch where your changes are", "type": "string", "required": True},
-    ],
-    output_type="string",
-)
-async def create_pull_request(agent, task_id: str, title: str, body: str, base_branch: str, head_branch: str) -> str:
-    # Logic for creating a pull request goes here
-    return "Successfully created pull request."
-
-
-@ability(
-    name="fetch_issues",
-    description="Fetches issues from a GitHub repository.",
-    parameters=[
-        {"name": "repo_name", "description": "Name of the repository", "type": "string", "required": True},
-        {"name": "owner", "description": "Owner of the repository", "type": "string", "required": True},
-        {"name": "labels", "description": "Labels to filter issues by", "type": "list", "required": False},
-        {"name": "state", "description": "State of issues ('open', 'closed')", "type": "string", "required": False, "default": "open"},
-    ],
-    output_type="list",
-)
-async def fetch_issues(agent, task_id: str, repo_name: str, owner: str, labels: list = None, state: str = 'open') -> list:
-    # Logic to fetch issues from GitHub goes here
-    return []
 
 
 @ability(
