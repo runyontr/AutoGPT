@@ -187,13 +187,14 @@ class Agent(
             NEXT_ACTION_FILE_NAME,
         )
 
-        self.event_history.register_action(
-            Action(
-                name=command_name,
-                args=arguments,
-                reasoning=assistant_reply_dict["thoughts"]["reasoning"],
+        if command_name:
+            self.event_history.register_action(
+                Action(
+                    name=command_name,
+                    args=arguments,
+                    reasoning=assistant_reply_dict["thoughts"]["reasoning"],
+                )
             )
-        )
 
         return command_name, arguments, assistant_reply_dict
 
@@ -231,7 +232,7 @@ class Agent(
                 )
 
                 # Intercept ContextItem if one is returned by the command
-                if type(return_value) == tuple and isinstance(
+                if type(return_value) is tuple and isinstance(
                     return_value[1], ContextItem
                 ):
                     context_item = return_value[1]
@@ -243,7 +244,7 @@ class Agent(
 
                 result = ActionSuccessResult(outputs=return_value)
             except AgentException as e:
-                result = ActionErrorResult(reason=e.message, error=e)
+                result = ActionErrorResult.from_exception(e)
 
             result_tlength = self.llm_provider.count_tokens(str(result), self.llm.name)
             if result_tlength > self.send_token_limit // 3:

@@ -58,18 +58,14 @@ class AgentProtocolServer:
         config.bind = [f"localhost:{port}"]
         app = FastAPI(
             title="AutoGPT Server",
-            description="Forked from AutoGPT Forge; Modified version of The Agent Protocol.",
+            description="Forked from AutoGPT Forge; "
+            "Modified version of The Agent Protocol.",
             version="v0.4",
         )
 
         # Add CORS middleware
         origins = [
-            "http://localhost:5000",
-            "http://127.0.0.1:5000",
-            "http://localhost:8000",
-            "http://127.0.0.1:8000",
-            "http://localhost:8080",
-            "http://127.0.0.1:8080",
+            "*",
             # Add any other origins you want to whitelist
         ]
 
@@ -98,7 +94,8 @@ class AgentProtocolServer:
 
         else:
             logger.warning(
-                f"Frontend not found. {frontend_path} does not exist. The frontend will not be available."
+                f"Frontend not found. {frontend_path} does not exist. "
+                "The frontend will not be available."
             )
 
         # Used to access the methods on this class from API route handlers
@@ -181,20 +178,26 @@ class AgentProtocolServer:
         is_init_step = not bool(agent.event_history)
         execute_command, execute_command_args, execute_result = None, None, None
         execute_approved = False
-        if is_init_step:
+
+        # HACK: only for compatibility with AGBenchmark
+        if step_request.input == "y":
             step_request.input = ""
-        elif (
-            agent.event_history.current_episode
+
+        user_input = step_request.input if not is_init_step else ""
+
+        if (
+            not is_init_step
+            and agent.event_history.current_episode
             and not agent.event_history.current_episode.result
         ):
             execute_command = agent.event_history.current_episode.action.name
             execute_command_args = agent.event_history.current_episode.action.args
-            execute_approved = not step_request.input or step_request.input == "y"
+            execute_approved = not user_input
 
             logger.debug(
                 f"Agent proposed command"
                 f" {execute_command}({fmt_kwargs(execute_command_args)})."
-                f" User input/feedback: {repr(step_request.input)}"
+                f" User input/feedback: {repr(user_input)}"
             )
 
         # Save step request
@@ -218,8 +221,10 @@ class AgentProtocolServer:
                 return step
 
             if execute_command == ask_user.__name__:  # HACK
-                execute_result = ActionSuccessResult(outputs=step_request.input)
+                execute_result = ActionSuccessResult(outputs=user_input)
                 agent.event_history.register_result(execute_result)
+            elif not execute_command:
+                execute_result = None
             elif execute_approved:
                 step = await self.db.update_step(
                     task_id=task_id,
@@ -232,11 +237,11 @@ class AgentProtocolServer:
                     command_args=execute_command_args,
                 )
             else:
-                assert step_request.input
+                assert user_input
                 execute_result = await agent.execute(
                     command_name="human_feedback",  # HACK
                     command_args={},
-                    user_input=step_request.input,
+                    user_input=user_input,
                 )
 
         # Propose next action
@@ -255,8 +260,9 @@ class AgentProtocolServer:
         # Format step output
         output = (
             (
-                f"Command `{execute_command}({fmt_kwargs(execute_command_args)})` returned:"
-                f" {execute_result}\n\n"
+                f"`{execute_command}({fmt_kwargs(execute_command_args)})` returned:"
+                + ("\n\n" if "\n" in str(execute_result) else " ")
+                + f"{execute_result}\n\n"
             )
             if execute_command_args and execute_command != "ask_user"
             else ""
@@ -357,9 +363,9 @@ class AgentProtocolServer:
                 file_path = artifact.relative_path
             workspace = get_task_agent_file_workspace(task_id, self.agent_manager)
             retrieved_artifact = workspace.read_file(file_path, binary=True)
-        except NotFoundError as e:
+        except NotFoundError:
             raise
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             raise
 
         return StreamingResponse(

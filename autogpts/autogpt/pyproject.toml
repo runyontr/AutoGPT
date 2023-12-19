@@ -16,8 +16,7 @@ packages = [{ include = "autogpt" }]
 
 
 [tool.poetry.scripts]
-autogpt = "autogpt.app.cli:run"
-run = "autogpt.app.cli:run"
+autogpt = "autogpt.app.cli:cli"
 serve = "autogpt.app.cli:serve"
 
 
@@ -50,7 +49,7 @@ playsound = "~1.2.2"
 prompt_toolkit = "^3.0.38"
 pydantic = "*"
 pylatexenc = "*"
-PyPDF2 = "*"
+pypdf = "^3.1.0"
 python-docx = "*"
 python-dotenv = "^1.0.0"
 pyyaml = "^6.0"
@@ -66,7 +65,9 @@ webdriver-manager = "*"
 openapi-python-client = "^0.14.0"
 
 # Benchmarking
-agbenchmark = { path = "../../benchmark", optional = true }
+# agbenchmark = { path = "../../benchmark", optional = true }
+agbenchmark = {git = "https://github.com/Significant-Gravitas/AutoGPT.git", subdirectory = "benchmark", optional = true}
+google-cloud-logging = "^3.8.0"
 
 [tool.poetry.extras]
 benchmark = ["agbenchmark"]
@@ -108,7 +109,7 @@ line-length = 88
 target-version = ['py310']
 include = '\.pyi?$'
 packages = ["autogpt"]
-extend-exclude = '.+/(dist|.venv|venv|build)/.+'
+extend-exclude = '.+/(dist|.venv|venv|build|data)/.+'
 
 
 [tool.isort]
@@ -126,17 +127,32 @@ sections = [
     "FIRSTPARTY",
     "LOCALFOLDER"
 ]
-skip = '''
-    .tox
-    __pycache__
-    *.pyc
-    .env
-    venv*/*
-    .venv/*
-    reports/*
-    dist/*
+extend_skip = [
+    "agbenchmark_config/temp_folder/",
+    "data/",
+]
 
-'''
+
+[tool.mypy]
+follow_imports = 'skip'
+check_untyped_defs = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+files = [
+    'autogpt/**/*.py',
+    'tests/**/*.py'
+]
+
+[[tool.mypy.overrides]]
+module = 'tests.*'
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    'requests.*',
+    'yaml.*'
+]
+ignore_missing_imports = true
 
 
 [tool.pytest.ini_options]
