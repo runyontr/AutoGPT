@@ -1,12 +1,8 @@
-from ..registry import ability
+from ..registry import action
 
 import os
-import git
-from git import Repo
 from github import Github, Issue
 from pathlib import Path
-
-from ...agent import Agent
 
 # def get_issue_details(repo_url: str, issue_number: int) -> dict:
 #     # Retrieve details of the specified issue from the repo
@@ -14,7 +10,7 @@ from ...agent import Agent
 
 
 
-@ability(
+@action(
     name="create_pull_request",
     description="Creates a pull request on GitHub to merge the head branch into the base",
     parameters=[
@@ -39,7 +35,7 @@ async def create_pull_request(agent, task_id: str, repo_name: str, title: str, b
     return "Successfully created pull request."
 
 
-@ability(
+@action(
     name="fetch_issues",
     description="Fetches issues from a GitHub repository.",
     parameters=[
@@ -55,7 +51,7 @@ async def fetch_issues(agent, task_id: str, repo_name: str, owner: str, labels: 
     return []
 
 
-@ability(
+@action(
     name="fetch_issue",
     description="Fetches a single issue from a GitHub repository using Issue ID.",
     parameters=[
@@ -69,15 +65,21 @@ async def fetch_issue(agent, task_id: str, repo_name: str, owner: str, issue_id:
     # Logic to fetch a single issue from GitHub using Issue ID goes here
         # Create a GitHub instance using a token (You can get the token from your GitHub settings)
     # Make sure the token has appropriate permissions to access issues.
+    import pprint;
+    pprint.pprint("fetch_issue called")
     g = Github(os.environ["GITHUB_TOKEN"])
-
+    print(f"Issue: {owner}/{repo_name}#{issue_id}")
     # Access the repo
-    repo = g.get_repo(f"{owner}/{repo_name}")
-
+    if len(repo_name.split("/")) == 2:
+        owner, name = repo_name.split("/")
+    else:
+        # owner = repo_name
+        repo_name = "/".join([owner, repo_name])
+    repo = g.get_repo(repo_name)
+    # repo = g.get_repo(f"{owner}/{repo_name}")
+    pprint.pprint(repo)
     # Fetch the issue by ID
     issue = repo.get_issue(number=issue_id)
-    import pprint;
-    print(f"Issue: {owner}/{repo_name}#{issue_id}")
     pprint.pprint(issue)
     # return Issue
     comments = issue.get_comments()
@@ -103,9 +105,46 @@ async def fetch_issue(agent, task_id: str, repo_name: str, owner: str, issue_id:
         "comments": [ {"user": c.user.login, "body": c.body, "id": c.id}  for c in comments]
     }
 
-    return issue_data
+    ret = f"Issue Title: {issue.title}\nIssue Body: {issue.body}"
+    ret += "\nComments:"
+    for c in comments:
+        ret += f"\n{c.user}: {c.body}"
+
+    return ret
 
 
 def get_pr_reviews(repo_url: str, pr_number: int) -> list:
     # Fetch reviews and comments for the specified PR
     pass
+
+@action(
+    name="add_comment",
+    description="Adds a comment to a specified GitHub issue.",
+    parameters=[
+        {"name": "repo_name", "description": "Name of the repository", "type": "string", "required": True},
+        {"name": "owner", "description": "Owner of the repository", "type": "string", "required": True},
+        {"name": "issue_number", "description": "Number of the issue", "type": "int", "required": True},
+        {"name": "comment_body", "description": "Content of the comment", "type": "string", "required": True},
+    ],
+    output_type="string",
+)
+
+async def add_comment(agent, task_id: str, repo_name: str, owner: str, issue_number: int, comment_body: str) -> str:
+    # Create a GitHub instance using a token (You can get the token from your GitHub settings)
+    g = Github(os.environ["GITHUB_TOKEN"])
+    
+    # Get the repository
+    if len(repo_name.split("/")) == 2:
+        owner, name = repo_name.split("/")
+    else:
+        owner = repo_name
+        repo_name = "/".join([owner, repo_name])
+    repo = g.get_repo(repo_name)
+    
+    # Get the issue
+    issue = repo.get_issue(issue_number)
+    
+    # Add the comment to the issue
+    issue.create_comment(comment_body)
+    
+    return "Successfully added comment to issue."

@@ -238,7 +238,7 @@ try:
     # Set the parameters for the chat completion
     chat_completion_kwargs = {
         "messages": messages,
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-3.5-turbo-16k",
     }
     # Get the LLM's response and interpret it
     chat_response = await chat_completion_request(**chat_completion_kwargs)
@@ -374,7 +374,7 @@ async def execute_step(self, task_id: str, step_request: StepRequestBody) -> Ste
     LOG.info(f"\t✅ Final Step completed: {step.step_id} input: {step.input[:19]}")
 
     # Initialize the PromptEngine with the "gpt-3.5-turbo" model
-    prompt_engine = PromptEngine("gpt-3.5-turbo")
+    prompt_engine = PromptEngine("gpt-3.5-turbo-16k")
 
     # Load the system and task prompts
     system_prompt = prompt_engine.load_prompt("system-format")
@@ -399,7 +399,7 @@ async def execute_step(self, task_id: str, step_request: StepRequestBody) -> Ste
         # Define the parameters for the chat completion request
         chat_completion_kwargs = {
             "messages": messages,
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-3.5-turbo-16k",
         }
         # Make the chat completion request and parse the response
         chat_response = await chat_completion_request(**chat_completion_kwargs)

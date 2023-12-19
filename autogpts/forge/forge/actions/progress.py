@@ -1,8 +1,8 @@
 
-from ..registry import ability
+from .registry import action
 
 
-@ability(
+@action(
     name="cant_make_progress",
     description="Should be called when the agent doesn't believe it can make any progress on the task",
     parameters=[

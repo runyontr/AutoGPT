@@ -121,7 +121,7 @@ class ActionRegister:
                 ).replace("/", ".")
                 try:
                     module = importlib.import_module(
-                        f".{action[:-3]}", package="forge.sdk.abilities"
+                        f".{action[:-3]}", package="forge.actions"
                     )
                     for attr in dir(module):
                         func = getattr(module, attr)
@@ -182,28 +182,16 @@ class ActionRegister:
             Exception: If there is an error in running the action.
         """
         try:
-<<<<<<< HEAD:autogpts/forge/forge/sdk/abilities/registry.py
-            ability = self.abilities[ability_name]
-            return await ability(self.agent, task_id, *args, **kwds)
-        except Exception as inner_ex:
-            raise inner_ex
-=======
             action = self.abilities[action_name]
             return await action(self.agent, task_id, *args, **kwds)
         except Exception:
             raise
->>>>>>> upstream/master:autogpts/forge/forge/actions/registry.py
 
 
 if __name__ == "__main__":
     import sys
 
-<<<<<<< HEAD:autogpts/forge/forge/sdk/abilities/registry.py
-    sys.path.append("/Users/tom/Workspaces/aisummit/agent/AutoGPT/forge/forge")
-    register = AbilityRegister(agent=None)
-=======
     sys.path.append("/Users/swifty/dev/forge/forge")
     register = ActionRegister(agent=None)
->>>>>>> upstream/master:autogpts/forge/forge/actions/registry.py
     print(register.abilities_description())
     print(register.run_action("abc", "list_files", "/Users/swifty/dev/forge/forge"))

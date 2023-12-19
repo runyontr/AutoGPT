@@ -4,7 +4,7 @@ import os
 import shutil  # For cleanup
 
 # Assuming the clone_repo function is in a file named my_module.py
-from forge.sdk.abilities.git import clone_repo, commit_changes
+from forge.actions.git import clone_repo, commit_changes
 
 class TestCloneRepo(unittest.TestCase):
     

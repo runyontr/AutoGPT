@@ -2,12 +2,14 @@ import pprint
 from typing import List
 
 from ..registry import action
-from ....sdk import (
+from ...sdk import (
     PromptEngine,
     chat_completion_request,
 )
-import json
+import json, time
 
+
+model = "gpt-4"
 
 @action(
     name="list_files",
@@ -85,7 +87,7 @@ async def read_file(agent, task_id: str, file_path: str) -> bytes:
     return agent.workspace.read(task_id=task_id, path=file_path)
 
 
-@ability(
+@action(
     name="modify_file",
     description="Return an updated file contents with the changes requested applied.",
     parameters=[
@@ -107,7 +109,8 @@ async def read_file(agent, task_id: str, file_path: str) -> bytes:
 async def modify_file(agent, task_id: str, file_path: str, changes_requested: str) -> str:
     # Make specified changes to the given file in the local repo
     # we might want this to be a gpt-4 call to improve performance.
-    prompt_engine = PromptEngine("gpt-3.5-turbo-16k")
+    # prompt_engine = PromptEngine("gpt-3.5-turbo-16k")
+    prompt_engine = PromptEngine(model)
 
     contents = await read_file(agent,task_id=task_id ,file_path=file_path)
     if contents is None:
@@ -127,8 +130,12 @@ async def modify_file(agent, task_id: str, file_path: str, changes_requested: st
 
     chat_completion_kwargs = {
                 "messages": messages,
-                "model": "gpt-3.5-turbo",
+                # "model": "gpt-3.5-turbo",
+                "model": model,
             }
+    if model == "gpt-4":
+        pprint.pprint(f"Waiting 60 seconds for GPT-4 token limite to refresh")
+        time.sleep(60)
     chat_response = await chat_completion_request(**chat_completion_kwargs)
     pprint.pprint(f"Response:\n\n{chat_response}")
     # answer = json.loads(chat_response["choices"][0]["message"]["content"])

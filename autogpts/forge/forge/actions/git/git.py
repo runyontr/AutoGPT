@@ -1,16 +1,18 @@
-from ..registry import ability
+from ..registry import action
 
 import os
+# import forge.actions.git.git as git
+# from forge.actions.git.git import Repo
+# from pathlib import Path
+
+# from github import Github
 import git
 from git import Repo
-from pathlib import Path
-
-from github import Github
 
 from ...agent import Agent
 
 
-# @ability(
+# @action(
 #     name="create_pull_request",
 #     description="Creates a pull request on GitHub to merge the head branch into the base branch.",
 #     parameters=[
@@ -35,7 +37,7 @@ from ...agent import Agent
 #     return "Successfully created pull request."
 
 
-@ability(
+@action(
     name="clone_repo",
     description="Clones a GitHub repository into the dest_path folder which it expects not to exist. This will fail if that folder is already present",
     parameters=[
@@ -72,7 +74,7 @@ async def clone_repo(agent: Agent, task_id: str, repo_url: str, dest_path: str) 
 
 
 
-@ability(
+@action(
     name="create_branch",
     description="Creates a new branch in the repository.",
     parameters=[
@@ -102,7 +104,7 @@ async def create_branch(agent, task_id: str, repo_path: str,  branch_name: str, 
     except Exception as e:
         return f"Error creating branch: {str(e)}"
 
-@ability(
+@action(
     name="commit_changes",
     description="Commits changes made in the current branch.",
     parameters=[
@@ -119,11 +121,14 @@ async def commit_changes(agent, task_id: str, commit_message: str, repo_path: st
         repo = Repo(repo_path)
         
         # Check for changes
-        if not repo.is_dirty():
+        if not repo.is_dirty() and repo.untracked_files == []:
             return "No changes to commit."
 
         # Add all changed files
         repo.git.add(A=True)
+
+        for file in repo.untracked_files:
+            repo.git.add(file)
         
         # Commit the changes
         repo.git.commit(m=commit_message)
@@ -133,7 +138,7 @@ async def commit_changes(agent, task_id: str, commit_message: str, repo_path: st
         return f"Error committing changes: {str(e)}"
 
 
-@ability(
+@action(
     name="push_branch",
     description="Pushes the current branch to the specified remote.",
     parameters=[
@@ -158,17 +163,4 @@ async def push_branch(agent, task_id: str, repo_path: str, branch_name: str, rem
 
 
 
-@ability(
-    name="add_comment",
-    description="Adds a comment to a specified GitHub issue.",
-    parameters=[
-        {"name": "repo_name", "description": "Name of the repository", "type": "string", "required": True},
-        {"name": "owner", "description": "Owner of the repository", "type": "string", "required": True},
-        {"name": "issue_number", "description": "Number of the issue", "type": "int", "required": True},
-        {"name": "comment_body", "description": "Content of the comment", "type": "string", "required": True},
-    ],
-    output_type="string",
-)
-async def add_comment(agent, task_id: str, repo_name: str, owner: str, issue_number: int, comment_body: str) -> str:
-    # Logic to add a comment to a GitHub issue goes here
-    return "Successfully added comment to issue."
+

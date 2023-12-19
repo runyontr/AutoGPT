@@ -31,6 +31,7 @@ class ActionModel(Base):
     name = Column(String)
     args = Column(String)
     output = Column(String)
+    reason = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     modified_at = Column(
         DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
@@ -93,7 +94,7 @@ class ForgeDatabase(AgentDB):
             LOG.error(f"Unexpected error while getting chat history: {e}")
             raise
     
-    async def create_action(self, task_id, name, args, output):
+    async def create_action(self, task_id, name, args, output, reason):
         if self.debug_enabled:
             LOG.debug(f"Creating new action for task {task_id}")
         try:
@@ -102,6 +103,7 @@ class ForgeDatabase(AgentDB):
                     action_id=str(uuid.uuid4()),
                     task_id=task_id,
                     name=name,
+                    reason=reason,
                     args=str(args),
                     output=output,
                 )
@@ -131,7 +133,7 @@ class ForgeDatabase(AgentDB):
                     .order_by(ActionModel.created_at)
                     .all()
                 ):
-                    return [{"name": a.name, "args": a.args, "output": a.output} for a in actions]
+                    return [{"name": a.name, "args": a.args, "output": a.output, "reason": a.reason} for a in actions]
 
                 else:
                     LOG.error(f"Action history not found with task_id: {task_id}")
