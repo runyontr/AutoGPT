@@ -1,3 +1,4 @@
+from forge.actions import ActionRegister
 from forge.sdk import (
     Agent,
     AgentDB,
@@ -10,16 +11,6 @@ from forge.sdk import (
     TaskRequestBody,
     Workspace,
 )
-
-import json
-import pprint
-import logging
-import time
-
-logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
-
-from forge.actions import ActionRegister
-
 
 model = "gpt-4"
 
